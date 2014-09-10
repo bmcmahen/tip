@@ -95,13 +95,27 @@ Tip.prototype.message = function(content){
  * @api public
  */
 
-Tip.prototype.attach = function(el){
+Tip.prototype.attach = function(el) {
   this.target = el;
   this.handleEvents = events(el, this);
   this.handleEvents.bind('mouseover');
   this.handleEvents.bind('mouseout');
+  this.handleEvents.bind('touchstart', 'showOnTouch');
   return this;
 };
+
+/**
+ * Show tip on target being touched.
+ *
+ * @param {Event} e
+ */
+
+Tip.prototype.showOnTouch = function(e) {
+  this.show(this.target);
+  this.docEvents = events(document, this);
+  this.docEvents.bind('touchstart');
+};
+
 
 /**
  * On mouse over
@@ -111,9 +125,28 @@ Tip.prototype.attach = function(el){
  * @api private
  */
 
-Tip.prototype.onmouseover = function() {
+Tip.prototype.onmouseover = function(){
   this.show(this.target);
   this.cancelHide();
+  this.docEvents = events(document, this);
+  this.docEvents.bind('touchstart');
+  return this;
+};
+
+
+/**
+ * Determine if we should close the tip.
+ *
+ * @param {Event} e
+ * @return {Tip}
+ * @api private
+ */
+
+Tip.prototype.ontouchstart = function(e){
+  if (e.target == this.target) return;
+  if (this.el.contains(e.target)) return;
+  this.hide();
+  return this;
 };
 
 /**
@@ -124,7 +157,7 @@ Tip.prototype.onmouseover = function() {
  * @api private
  */
 
-Tip.prototype.onmouseout = function() {
+Tip.prototype.onmouseout = function(){
   this.hide(this.delay);
 };
 
@@ -416,6 +449,11 @@ Tip.prototype.remove = function(){
     this.winEvents.unbind();
     this.winEvents = null;
   }
+
+  if (this.docEvents) {
+    this.docEvents.unbind();
+  }
+
   this.emit('hide');
 
   var parent = this.el.parentNode;
